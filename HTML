@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Activity Viewer</title>
+
+  <!-- Link external CSS -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <header>📘 Activity Viewer</header>
+  <main>
+    <aside id="sidebar">
+      <ul id="fileList"></ul>
+    </aside>
+    <section id="content">
+      <p><em>Loading file list…</em></p>
+    </section>
+  </main>
+
+  <!-- Markdown Parser -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    const fileListEl = document.getElementById('fileList');
+    const contentEl = document.getElementById('content');
+
+    async function loadList() {
+      try {
+        const res = await fetch('activity/files.json');
+        if (!res.ok) throw new Error('Cannot load files.json');
+        const files = await res.json();
+        createList(files);
+      } catch (err) {
+        fileListEl.innerHTML = `<li style="color:red;">${err.message}</li>`;
+        contentEl.innerHTML = '';
+      }
+    }
+
+    function createList(files) {
+      fileListEl.innerHTML = '';
+      files.forEach((file, i) => {
+        const name = file.replace('.md','');
+        const li = document.createElement('li');
+        const btn = document.createElement('button');
+        btn.textContent = name;
+        btn.onclick = () => loadFile(`activity/${file}`, btn);
+        if (i === 0) btn.classList.add('active');
+        li.appendChild(btn);
+        fileListEl.appendChild(li);
+      });
+      if (files.length) loadFile(`activity/${files[0]}`, fileListEl.querySelector('button'));
+    }
+
+    async function loadFile(path, button) {
+      document.querySelectorAll('#fileList button').forEach(b => b.classList.remove('active'));
+      button.classList.add('active');
+      try {
+        const res = await fetch(path);
+        const text = await res.text();
+        contentEl.innerHTML = marked.parse(text);
+      } catch {
+        contentEl.innerHTML = `<p style="color:red;">Error loading ${path}</p>`;
+      }
+    }
+
+    loadList();
+  </script>
+</body>
+</html>
